@@ -1,20 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, User, Cpu, AlertTriangle } from 'lucide-react'
 
-// Unified inline renderer: handles **bold**, *italic*, and CX8_xxx chip buttons in a single pass
+// Unified inline renderer: handles **bold**, *italic*, [links](url), and CX8_xxx chip buttons in a single pass
 const renderInline = (text, onSelectChip) => {
   if (!text) return null
-  // Tokenize by any inline patterns we care about
-  const tokens = text.split(/(\*\*.*?\*\*|\*[^*]+?\*|CX8_\d{3})/g)
-  return tokens.map((tok, i) => {
-    if (tok.startsWith('**') && tok.endsWith('**') && tok.length > 4) {
-      return <strong key={i}>{tok.slice(2, -2)}</strong>
-    }
-    if (tok.startsWith('*') && tok.endsWith('*') && tok.length > 2) {
-      return <em key={i}>{tok.slice(1, -1)}</em>
-    }
-    if (tok.match(/^CX8_\d{3}$/)) {
-      return (
+  // Tokenize by any inline patterns — order matters: links before bold/italic
+  const tokens = text.split(/(\[([^\]]+)\]\((https?:\/\/[^\)]+)\)|\*\*.*?\*\*|\*[^*]+?\*|CX8_\d{3})/g)
+  const result = []
+  let i = 0
+  while (i < tokens.length) {
+    const tok = tokens[i]
+    // Markdown link: [label](url) — captured as a full match token
+    const linkMatch = tok.match(/^\[([^\]]+)\]\((https?:\/\/[^\)]+)\)$/)
+    if (linkMatch) {
+      result.push(
+        <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer"
+          style={{ color: 'var(--brand-green)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+          {linkMatch[1]}
+        </a>
+      )
+    } else if (tok.startsWith('**') && tok.endsWith('**') && tok.length > 4) {
+      result.push(<strong key={i}>{tok.slice(2, -2)}</strong>)
+    } else if (tok.startsWith('*') && tok.endsWith('*') && tok.length > 2) {
+      result.push(<em key={i}>{tok.slice(1, -1)}</em>)
+    } else if (tok.match(/^CX8_\d{3}$/)) {
+      result.push(
         <button
           key={i}
           className="chip-mention-btn"
@@ -24,9 +34,12 @@ const renderInline = (text, onSelectChip) => {
           {tok}
         </button>
       )
+    } else if (tok !== undefined) {
+      result.push(tok)
     }
-    return tok
-  })
+    i++
+  }
+  return result
 }
 
 const renderMessageContent = (text, onSelectChip) => {
