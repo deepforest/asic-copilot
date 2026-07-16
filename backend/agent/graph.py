@@ -246,7 +246,7 @@ def correlation_node(state: ASICState) -> Dict[str, Any]:
         trace.append("[Correlation Agent] Packaging anomalies and requesting structured LLM evaluation...")
         try:
             api_key = os.getenv("GEMINI_API_KEY")
-            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.0, google_api_key=api_key)
+            llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash", temperature=0.0, google_api_key=api_key)
             structured_eval = llm.with_structured_output(AnomalyReport)
             
             prompt = ChatPromptTemplate.from_messages([
@@ -343,7 +343,7 @@ def insights_generator_node(state: ASICState) -> Dict[str, Any]:
     # Request LLM to write a professional markdown report summarizing everything
     try:
         api_key = os.getenv("GEMINI_API_KEY")
-        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.2, google_api_key=api_key)
+        llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash", temperature=0.2, google_api_key=api_key)
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", (
@@ -378,7 +378,13 @@ def insights_generator_node(state: ASICState) -> Dict[str, Any]:
                 anomalies=str(anomalies)
             )
         )
-        report_markdown = report_content.content
+        if isinstance(report_content.content, list):
+            report_markdown = "".join(
+                [block.get("text", "") if isinstance(block, dict) else str(block) 
+                 for block in report_content.content]
+            )
+        else:
+            report_markdown = str(report_content.content)
     except Exception as e:
         trace.append(f"[Insights Generator ERROR] Report generation failed: {str(e)}")
         # Fallback report

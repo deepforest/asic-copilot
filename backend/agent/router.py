@@ -7,14 +7,13 @@ def get_router_agent() -> ChatGoogleGenerativeAI:
     """
     Initializes the Gemini model with structured output mapping to RouterDecision.
     """
-    # Fallback to gemini-1.5-flash if gemini-2.5-flash is not fully registered in this version of the SDK, 
-    # though both are supported. Let's use gemini-2.5-flash by default as requested.
+    # Use gemini-3.5-flash as the primary active Flash model in July 2026.
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GEMINI_API_KEY environment variable is not set.")
         
     llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
+        model="gemini-3.5-flash",
         temperature=0.0,
         google_api_key=api_key
     )
