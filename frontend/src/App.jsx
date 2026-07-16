@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Terminal, Database, FileText, Cpu, Activity, Send } from 'lucide-react'
+import { Terminal, Database, FileText, Cpu, Activity, Send, MessageSquare } from 'lucide-react'
 import ChatWindow from './components/ChatWindow.jsx'
 import DataBrowser from './components/DataBrowser.jsx'
 import TraceVisualizer from './components/TraceVisualizer.jsx'
@@ -20,11 +20,13 @@ function App() {
       content: (
         "Hello! I am your **ASIC Copilot**.\n\n" +
         "I can help you analyze silicon bring-up yield logs and time-series telemetry data across process corners.\n\n" +
-        "Try asking me queries like:\n" +
-        "- *'Analyze our latest PVT run for Revision B0 and tell me if any chips violated our specifications'* (Requires Specs, Yield & Telemetry)\n" +
-        "- *'Show me wafer yield static leakage and list FF corner outliers'* (Requires Yield)\n" +
-        "- *'Compare sensor logs of chip CX8_002 and tell me if it triggered thermal throttling'* (Requires Specs & Telemetry)"
+        "Click on any sample question below to automatically load it:"
       ),
+      suggestions: [
+        "Analyze our latest PVT run for Revision B0 and tell me if any chips violated our specifications",
+        "Show me wafer yield static leakage and list FF corner outliers",
+        "Compare sensor logs of chip CX8_002 and tell me if it triggered thermal throttling"
+      ],
       anomalies: null
     }
   ])
@@ -156,38 +158,79 @@ function App() {
         </div>
       </header>
 
-      {/* Main Grid */}
+      {/* Main Workspace with Sidebar and content area */}
       <main className="app-workspace">
-        {/* Left Side: Chat Workspace */}
-        <section className="sidebar-container">
-          <div style={{ display: 'grid', gridTemplateRows: '1fr auto', height: '100%', overflow: 'hidden' }}>
-            <ChatWindow 
-              messages={messages} 
-              isLoading={isLoading} 
-              onSend={handleSendMessage} 
-              onSelectChip={(chipId) => {
-                setActiveChip(chipId)
-                setCurrentTab('telemetry')
-              }}
-            />
-            {traceLogs.length > 0 && (
-              <TraceVisualizer logs={traceLogs} />
-            )}
+        {/* Left Side: Navigation Sidebar (icons only) */}
+        <nav className="app-sidebar">
+          <div className="sidebar-nav-items">
+            <button 
+              className={`nav-icon-btn ${currentTab === 'chat' ? 'active' : ''}`}
+              onClick={() => setCurrentTab('chat')}
+              data-tooltip="Interactive Chat"
+            >
+              <MessageSquare size={20} />
+            </button>
+            <button 
+              className={`nav-icon-btn ${currentTab === 'specs' ? 'active' : ''}`}
+              onClick={() => setCurrentTab('specs')}
+              data-tooltip="Design Specifications"
+            >
+              <FileText size={20} />
+            </button>
+            <button 
+              className={`nav-icon-btn ${currentTab === 'yield' ? 'active' : ''}`}
+              onClick={() => setCurrentTab('yield')}
+              data-tooltip="Wafer Yield Data"
+            >
+              <Database size={20} />
+            </button>
+            <button 
+              className={`nav-icon-btn ${currentTab === 'telemetry' ? 'active' : ''}`}
+              onClick={() => setCurrentTab('telemetry')}
+              data-tooltip="Stress Telemetry Logs"
+            >
+              <Activity size={20} />
+            </button>
           </div>
-        </section>
+        </nav>
 
-        {/* Right Side: Data Dashboard */}
-        <section className="main-content">
-          <DataBrowser 
-            activeTab={currentTab} 
-            setActiveTab={setCurrentTab}
-            spec={spec}
-            yieldData={yieldData}
-            telemetry={telemetry}
-            activeChip={activeChip}
-            setActiveChip={setActiveChip}
-          />
-        </section>
+        {/* Dynamic Content Panel */}
+        <div className="workspace-content">
+          {/* Chat Window Panel */}
+          {currentTab === 'chat' && (
+            <section className="sidebar-container full-width">
+              <div style={{ display: 'grid', gridTemplateRows: '1fr auto', height: '100%', overflow: 'hidden' }}>
+                <ChatWindow 
+                  messages={messages} 
+                  isLoading={isLoading} 
+                  onSend={handleSendMessage} 
+                  onSelectChip={(chipId) => {
+                    setActiveChip(chipId)
+                    setCurrentTab('telemetry')
+                  }}
+                />
+                {traceLogs.length > 0 && (
+                  <TraceVisualizer logs={traceLogs} />
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Data Dashboard Panel */}
+          {currentTab !== 'chat' && (
+            <section className="main-content full-width">
+              <DataBrowser 
+                activeTab={currentTab} 
+                setActiveTab={setCurrentTab}
+                spec={spec}
+                yieldData={yieldData}
+                telemetry={telemetry}
+                activeChip={activeChip}
+                setActiveChip={setActiveChip}
+              />
+            </section>
+          )}
+        </div>
       </main>
     </div>
   )

@@ -123,6 +123,40 @@ function ChatWindow({ messages, isLoading, onSend, onSelectChip }) {
                   </div>
                 </div>
               )}
+              {msg.suggestions && (
+                <div className="suggestions-list" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {msg.suggestions.map((sugg, sIdx) => (
+                    <button
+                      key={sIdx}
+                      className="suggestion-link"
+                      type="button"
+                      onClick={() => setInput(sugg)}
+                      style={{
+                        textAlign: 'left',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--brand-green)',
+                        fontSize: '0.85rem',
+                        lineHeight: '1.4',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.background = 'rgba(118, 185, 0, 0.08)';
+                        e.currentTarget.style.borderColor = 'rgba(118, 185, 0, 0.2)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                        e.currentTarget.style.borderColor = 'var(--border-color)';
+                      }}
+                    >
+                      💡 "{sugg}"
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}

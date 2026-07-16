@@ -64,52 +64,7 @@ function DataBrowser({
 
   return (
     <div className="data-browser">
-      {/* Tabs Header */}
-      <div className="tabs-header">
-        <button 
-          className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`}
-          onClick={() => setActiveTab('chat')}
-        >
-          <FileText size={16} />
-          <span>Interactive Chat</span>
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'specs' ? 'active' : ''}`}
-          onClick={() => setActiveTab('specs')}
-        >
-          <FileText size={16} />
-          <span>Design Specifications</span>
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'yield' ? 'active' : ''}`}
-          onClick={() => setActiveTab('yield')}
-        >
-          <Database size={16} />
-          <span>Wafer Yield Data</span>
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'telemetry' ? 'active' : ''}`}
-          onClick={() => setActiveTab('telemetry')}
-        >
-          <Activity size={16} />
-          <span>Stress Telemetry Logs</span>
-        </button>
-      </div>
-
-      {/* Tab Workspaces */}
       <div className="tab-content-container">
-        
-        {/* Tab 1: Chat Workspace (shown when Chat is selected in small viewport or sidebar) */}
-        {activeTab === 'chat' && (
-          <div className="tab-pane center-pane text-muted">
-            <Cpu size={48} className="text-green glow-icon" style={{ marginBottom: '20px' }} />
-            <h3>ASIC Analytics Copilot Workspace</h3>
-            <p style={{ maxWidth: '400px', textAlign: 'center', marginTop: '10px' }}>
-              Your dialogue and agent executions are active in the left workspace. 
-              Use the tabs above to explore raw chip telemetry, specifications, and yields side-by-side.
-            </p>
-          </div>
-        )}
 
         {/* Tab 2: Design Specifications */}
         {activeTab === 'specs' && (
