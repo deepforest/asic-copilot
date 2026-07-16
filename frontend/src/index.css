@@ -236,7 +236,8 @@ body {
 .main-content {
   flex-grow: 1;
   background-color: var(--bg-primary);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   height: 100%;
   display: flex;
   flex-direction: column;

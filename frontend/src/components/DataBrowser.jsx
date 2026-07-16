@@ -334,8 +334,8 @@ function DataBrowser({
       {/* Embedded CSS */}
       <style>{`
         .data-browser {
-          display: grid;
-          grid-template-rows: 48px 1fr;
+          display: flex;
+          flex-direction: column;
           height: 100%;
           overflow: hidden;
         }
@@ -370,7 +370,8 @@ function DataBrowser({
         }
         .tab-content-container {
           flex: 1;
-          overflow: hidden;
+          overflow-y: auto;
+          overflow-x: hidden;
           background-color: var(--bg-primary);
         }
         .tab-pane {
