@@ -1,142 +1,126 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, User, Cpu, AlertTriangle } from 'lucide-react'
 
-// Simple custom Markdown-to-HTML parser to avoid installing external markdown packages
-const renderMessageContent = (text, onSelectChip) => {
-  if (!text) return ''
-  
-  // Replace chip codes with clickable buttons
-  const parts = text.split(/(CX8_\d{3})/g)
-  
-  return parts.map((part, index) => {
-    if (part.match(/CX8_\d{3}/)) {
+// Unified inline renderer: handles **bold**, *italic*, and CX8_xxx chip buttons in a single pass
+const renderInline = (text, onSelectChip) => {
+  if (!text) return null
+  // Tokenize by any inline patterns we care about
+  const tokens = text.split(/(\*\*.*?\*\*|\*[^*]+?\*|CX8_\d{3})/g)
+  return tokens.map((tok, i) => {
+    if (tok.startsWith('**') && tok.endsWith('**') && tok.length > 4) {
+      return <strong key={i}>{tok.slice(2, -2)}</strong>
+    }
+    if (tok.startsWith('*') && tok.endsWith('*') && tok.length > 2) {
+      return <em key={i}>{tok.slice(1, -1)}</em>
+    }
+    if (tok.match(/^CX8_\d{3}$/)) {
       return (
         <button
-          key={index}
+          key={i}
           className="chip-mention-btn"
-          onClick={() => onSelectChip(part)}
-          title={`Click to inspect telemetry for ${part}`}
+          onClick={() => onSelectChip(tok)}
+          title={`Click to inspect telemetry for ${tok}`}
         >
-          {part}
+          {tok}
         </button>
       )
     }
-    
-    // Split by lines for basic markdown paragraph/headers conversion
-    const lines = part.split('\n')
-    const blocks = []
-    let currentTable = null
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim()
-      
-      // If line is part of a table
-      if (line.startsWith('|')) {
-        // Skip separator lines like | :--- | :--- |
-        if (line.match(/^\|[\s\-\:\u00A0|]+$/) || line.includes(':---') || line.includes('---')) {
-          continue
-        }
-        
-        // Parse cells
-        const cells = line.split('|')
-          .map(c => c.trim())
-          .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1)
-        
-        if (!currentTable) {
-          currentTable = {
-            headers: cells,
-            rows: []
-          }
-        } else {
-          currentTable.rows.push(cells)
-        }
-      } else {
-        // If we were parsing a table, push it first
-        if (currentTable) {
-          blocks.push({ type: 'table', content: currentTable })
-          currentTable = null
-        }
-        
-        if (line === '') {
-          continue
-        }
-        
-        // Header elements
-        if (line.startsWith('# ')) {
-          blocks.push({ type: 'h1', text: line.substring(2) })
-        } else if (line.startsWith('## ')) {
-          blocks.push({ type: 'h2', text: line.substring(3) })
-        } else if (line.startsWith('### ')) {
-          blocks.push({ type: 'h3', text: line.substring(4) })
-        } else if (line.startsWith('- ') || line.startsWith('* ')) {
-          blocks.push({ type: 'li', text: line.substring(2) })
-        } else if (line === '---') {
-          blocks.push({ type: 'hr' })
-        } else {
-          blocks.push({ type: 'p', text: line })
-        }
-      }
-    }
-    
-    // Push final table if any
-    if (currentTable) {
-      blocks.push({ type: 'table', content: currentTable })
-    }
-    
-    return blocks.map((block, bIdx) => {
-      const key = `${index}-${bIdx}`
-      if (block.type === 'h1') {
-        return <h1 key={key} className="md-h1">{parseBolds(block.text)}</h1>
-      }
-      if (block.type === 'h2') {
-        return <h2 key={key} className="md-h2">{parseBolds(block.text)}</h2>
-      }
-      if (block.type === 'h3') {
-        return <h3 key={key} className="md-h3">{parseBolds(block.text)}</h3>
-      }
-      if (block.type === 'li') {
-        return <li key={key} className="md-li">{parseBolds(block.text)}</li>
-      }
-      if (block.type === 'hr') {
-        return <hr key={key} className="md-hr" style={{ margin: '16px 0', border: 'none', borderBottom: '1px solid var(--border-color)' }} />
-      }
-      if (block.type === 'p') {
-        return <p key={key} className="md-p">{parseBolds(block.text)}</p>
-      }
-      if (block.type === 'table') {
-        return (
-          <div key={key} className="table-responsive" style={{ margin: '14px 0', overflowX: 'auto' }}>
-            <table className="md-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', border: '1px solid var(--border-color)' }}>
-              <thead>
-                <tr style={{ background: 'rgba(255, 255, 255, 0.04)', borderBottom: '1px solid var(--border-color)' }}>
-                  {block.content.headers.map((h, hIdx) => (
-                    <th key={hIdx} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600' }}>
-                      {parseBolds(h)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {block.content.rows.map((row, rIdx) => (
-                  <tr key={rIdx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                    {row.map((cell, cIdx) => (
-                      <td key={cIdx} style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>
-                        {parseBolds(cell)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      }
-      return null
-    })
+    return tok
   })
 }
 
-// Simple bold parser mapping **bold** to <strong>bold</strong>
+const renderMessageContent = (text, onSelectChip) => {
+  if (!text) return ''
+
+  const lines = text.split('\n')
+  const blocks = []
+  let currentTable = null
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const trimmed = line.trim()
+
+    // Table lines
+    if (trimmed.startsWith('|')) {
+      // Skip separator rows like | :--- | --- |
+      if (trimmed.match(/^\|[\s\-:\|]+$/) || trimmed.includes(':---')) {
+        continue
+      }
+      const cells = trimmed.split('|')
+        .map(c => c.trim())
+        .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1)
+
+      if (!currentTable) {
+        currentTable = { headers: cells, rows: [] }
+      } else {
+        currentTable.rows.push(cells)
+      }
+      continue
+    }
+
+    // Flush any pending table
+    if (currentTable) {
+      blocks.push({ type: 'table', content: currentTable })
+      currentTable = null
+    }
+
+    if (trimmed === '') continue
+    if (trimmed === '---') { blocks.push({ type: 'hr' }); continue }
+    if (trimmed.startsWith('### ')) { blocks.push({ type: 'h3', text: trimmed.substring(4) }); continue }
+    if (trimmed.startsWith('## '))  { blocks.push({ type: 'h2', text: trimmed.substring(3) }); continue }
+    if (trimmed.startsWith('# '))   { blocks.push({ type: 'h1', text: trimmed.substring(2) }); continue }
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      blocks.push({ type: 'li', text: trimmed.substring(2) }); continue
+    }
+    // Numbered list items like "1. " "2. "
+    if (trimmed.match(/^\d+\.\s/)) {
+      blocks.push({ type: 'li', text: trimmed.replace(/^\d+\.\s/, '') }); continue
+    }
+    blocks.push({ type: 'p', text: trimmed })
+  }
+
+  if (currentTable) blocks.push({ type: 'table', content: currentTable })
+
+  return blocks.map((block, bIdx) => {
+    if (block.type === 'h1') return <h1 key={bIdx} className="md-h1">{renderInline(block.text, onSelectChip)}</h1>
+    if (block.type === 'h2') return <h2 key={bIdx} className="md-h2">{renderInline(block.text, onSelectChip)}</h2>
+    if (block.type === 'h3') return <h3 key={bIdx} className="md-h3">{renderInline(block.text, onSelectChip)}</h3>
+    if (block.type === 'li') return <li key={bIdx} className="md-li">{renderInline(block.text, onSelectChip)}</li>
+    if (block.type === 'hr') return <hr key={bIdx} style={{ margin: '16px 0', border: 'none', borderBottom: '1px solid var(--border-color)' }} />
+    if (block.type === 'p')  return <p key={bIdx} className="md-p">{renderInline(block.text, onSelectChip)}</p>
+    if (block.type === 'table') {
+      return (
+        <div key={bIdx} className="table-responsive" style={{ margin: '14px 0', overflowX: 'auto' }}>
+          <table className="md-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', border: '1px solid var(--border-color)' }}>
+            <thead>
+              <tr style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid var(--border-color)' }}>
+                {block.content.headers.map((h, hIdx) => (
+                  <th key={hIdx} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600' }}>
+                    {renderInline(h, onSelectChip)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.content.rows.map((row, rIdx) => (
+                <tr key={rIdx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  {row.map((cell, cIdx) => (
+                    <td key={cIdx} style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>
+                      {renderInline(cell, onSelectChip)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    }
+    return null
+  })
+}
+
+// parseBolds kept for backwards compatibility (welcome message uses it via suggestions rendering)
 const parseBolds = (text) => {
   const parts = text.split(/(\*\*.*?\*\*)/g)
   return parts.map((part, i) => {

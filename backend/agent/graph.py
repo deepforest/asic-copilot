@@ -351,7 +351,8 @@ def insights_generator_node(state: ASICState) -> Dict[str, Any]:
                 "Your role is to write a brief, direct, and technically precise engineering answer to the engineer's query.\n"
                 "Do NOT write a formal, verbose, multi-section 'executive report' or add document metadata (like 'Prepared for Product Manager').\n"
                 "Directly answer the query using the gathered data. State the specific findings, highlight design limit violations or corner exceptions with values (e.g. static leakage, core temperature limits), and explain the root cause briefly in an engineering-focused tone.\n"
-                "Keep the output concise, structured, and easy for an engineer to read. Use bullet points or short tables only if helpful to organize metrics."
+                "Keep the output concise, structured, and easy for an engineer to read. Use bullet points or short tables only if helpful to organize metrics.\n\n"
+                "CRITICAL FORMATTING RULE: NEVER use LaTeX math notation or surround symbols with '$' signs (e.g. do NOT write '$T_j$', '$V_{dd}$', '$\\le$'). Instead, write standard plain text or Unicode symbols directly (e.g. write 'Tj', 'Vdd', 'static leakage', 'Power (leakage)', '≤', '>=', etc.). All text must be standard plain text, readable in a standard chat bubble."
             )),
             ("human", (
                 "Engineer Query: {query}\n\n"
