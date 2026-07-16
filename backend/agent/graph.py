@@ -246,7 +246,7 @@ def correlation_node(state: ASICState) -> Dict[str, Any]:
         trace.append("[Correlation Agent] Packaging anomalies and requesting structured LLM evaluation...")
         try:
             api_key = os.getenv("GEMINI_API_KEY")
-            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.0, google_api_key=api_key)
+            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.0, google_api_key=api_key)
             structured_eval = llm.with_structured_output(AnomalyReport)
             
             prompt = ChatPromptTemplate.from_messages([
@@ -343,7 +343,7 @@ def insights_generator_node(state: ASICState) -> Dict[str, Any]:
     # Request LLM to write a professional markdown report summarizing everything
     try:
         api_key = os.getenv("GEMINI_API_KEY")
-        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.2, google_api_key=api_key)
+        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.2, google_api_key=api_key)
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", (

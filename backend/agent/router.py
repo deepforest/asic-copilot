@@ -14,7 +14,7 @@ def get_router_agent() -> ChatGoogleGenerativeAI:
         raise ValueError("GEMINI_API_KEY environment variable is not set.")
         
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model="gemini-1.5-flash",
         temperature=0.0,
         google_api_key=api_key
     )
