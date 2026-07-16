@@ -4,42 +4,36 @@ import { Send, User, Cpu, AlertTriangle } from 'lucide-react'
 // Unified inline renderer: handles **bold**, *italic*, [links](url), and CX8_xxx chip buttons in a single pass
 const renderInline = (text, onSelectChip) => {
   if (!text) return null
-  // Tokenize by any inline patterns — order matters: links before bold/italic
-  const tokens = text.split(/(\[([^\]]+)\]\((https?:\/\/[^\)]+)\)|\*\*.*?\*\*|\*[^*]+?\*|CX8_\d{3})/g)
-  const result = []
-  let i = 0
-  while (i < tokens.length) {
-    const tok = tokens[i]
-    // Markdown link: [label](url) — captured as a full match token
+  // Single outer capture group only — no nested groups, so split never emits undefined sub-captures
+  const tokens = text.split(/(\[[^\]]+\]\(https?:\/\/[^\)]+\)|\*\*.*?\*\*|\*[^*]+?\*|CX8_\d{3})/g)
+  return tokens.map((tok, i) => {
+    if (!tok) return null  // guard: skip empty/undefined from split
     const linkMatch = tok.match(/^\[([^\]]+)\]\((https?:\/\/[^\)]+)\)$/)
     if (linkMatch) {
-      result.push(
+      return (
         <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer"
           style={{ color: 'var(--brand-green)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
           {linkMatch[1]}
         </a>
       )
-    } else if (tok.startsWith('**') && tok.endsWith('**') && tok.length > 4) {
-      result.push(<strong key={i}>{tok.slice(2, -2)}</strong>)
-    } else if (tok.startsWith('*') && tok.endsWith('*') && tok.length > 2) {
-      result.push(<em key={i}>{tok.slice(1, -1)}</em>)
-    } else if (tok.match(/^CX8_\d{3}$/)) {
-      result.push(
-        <button
-          key={i}
-          className="chip-mention-btn"
+    }
+    if (tok.startsWith('**') && tok.endsWith('**') && tok.length > 4) {
+      return <strong key={i}>{tok.slice(2, -2)}</strong>
+    }
+    if (tok.startsWith('*') && tok.endsWith('*') && tok.length > 2) {
+      return <em key={i}>{tok.slice(1, -1)}</em>
+    }
+    if (tok.match(/^CX8_\d{3}$/)) {
+      return (
+        <button key={i} className="chip-mention-btn"
           onClick={() => onSelectChip(tok)}
-          title={`Click to inspect telemetry for ${tok}`}
-        >
+          title={`Click to inspect telemetry for ${tok}`}>
           {tok}
         </button>
       )
-    } else if (tok !== undefined) {
-      result.push(tok)
     }
-    i++
-  }
-  return result
+    return tok
+  })
 }
 
 const renderMessageContent = (text, onSelectChip) => {
