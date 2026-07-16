@@ -24,25 +24,114 @@ const renderMessageContent = (text, onSelectChip) => {
     
     // Split by lines for basic markdown paragraph/headers conversion
     const lines = part.split('\n')
-    return lines.map((line, lIdx) => {
-      // Header 1 (#)
-      if (line.startsWith('# ')) {
-        return <h1 key={`${index}-${lIdx}`} className="md-h1">{line.substring(2)}</h1>
+    const blocks = []
+    let currentTable = null
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim()
+      
+      // If line is part of a table
+      if (line.startsWith('|')) {
+        // Skip separator lines like | :--- | :--- |
+        if (line.match(/^\|[\s\-\:\u00A0|]+$/) || line.includes(':---') || line.includes('---')) {
+          continue
+        }
+        
+        // Parse cells
+        const cells = line.split('|')
+          .map(c => c.trim())
+          .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1)
+        
+        if (!currentTable) {
+          currentTable = {
+            headers: cells,
+            rows: []
+          }
+        } else {
+          currentTable.rows.push(cells)
+        }
+      } else {
+        // If we were parsing a table, push it first
+        if (currentTable) {
+          blocks.push({ type: 'table', content: currentTable })
+          currentTable = null
+        }
+        
+        if (line === '') {
+          continue
+        }
+        
+        // Header elements
+        if (line.startsWith('# ')) {
+          blocks.push({ type: 'h1', text: line.substring(2) })
+        } else if (line.startsWith('## ')) {
+          blocks.push({ type: 'h2', text: line.substring(3) })
+        } else if (line.startsWith('### ')) {
+          blocks.push({ type: 'h3', text: line.substring(4) })
+        } else if (line.startsWith('- ') || line.startsWith('* ')) {
+          blocks.push({ type: 'li', text: line.substring(2) })
+        } else if (line === '---') {
+          blocks.push({ type: 'hr' })
+        } else {
+          blocks.push({ type: 'p', text: line })
+        }
       }
-      // Header 2 (##)
-      if (line.startsWith('## ')) {
-        return <h2 key={`${index}-${lIdx}`} className="md-h2">{line.substring(3)}</h2>
+    }
+    
+    // Push final table if any
+    if (currentTable) {
+      blocks.push({ type: 'table', content: currentTable })
+    }
+    
+    return blocks.map((block, bIdx) => {
+      const key = `${index}-${bIdx}`
+      if (block.type === 'h1') {
+        return <h1 key={key} className="md-h1">{parseBolds(block.text)}</h1>
       }
-      // Header 3 (###)
-      if (line.startsWith('### ')) {
-        return <h3 key={`${index}-${lIdx}`} className="md-h3">{line.substring(4)}</h3>
+      if (block.type === 'h2') {
+        return <h2 key={key} className="md-h2">{parseBolds(block.text)}</h2>
       }
-      // Bullet items (- )
-      if (line.startsWith('- ') || line.startsWith('* ')) {
-        return <li key={`${index}-${lIdx}`} className="md-li">{parseBolds(line.substring(2))}</li>
+      if (block.type === 'h3') {
+        return <h3 key={key} className="md-h3">{parseBolds(block.text)}</h3>
       }
-      // Standard line
-      return <p key={`${index}-${lIdx}`} className="md-p">{parseBolds(line)}</p>
+      if (block.type === 'li') {
+        return <li key={key} className="md-li">{parseBolds(block.text)}</li>
+      }
+      if (block.type === 'hr') {
+        return <hr key={key} className="md-hr" style={{ margin: '16px 0', border: 'none', borderBottom: '1px solid var(--border-color)' }} />
+      }
+      if (block.type === 'p') {
+        return <p key={key} className="md-p">{parseBolds(block.text)}</p>
+      }
+      if (block.type === 'table') {
+        return (
+          <div key={key} className="table-responsive" style={{ margin: '14px 0', overflowX: 'auto' }}>
+            <table className="md-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', border: '1px solid var(--border-color)' }}>
+              <thead>
+                <tr style={{ background: 'rgba(255, 255, 255, 0.04)', borderBottom: '1px solid var(--border-color)' }}>
+                  {block.content.headers.map((h, hIdx) => (
+                    <th key={hIdx} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600' }}>
+                      {parseBolds(h)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {block.content.rows.map((row, rIdx) => (
+                  <tr key={rIdx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                    {row.map((cell, cIdx) => (
+                      <td key={cIdx} style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>
+                        {parseBolds(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      }
+      return null
     })
   })
 }
