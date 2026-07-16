@@ -129,10 +129,21 @@ function App() {
         }
       } else {
         const err = await res.json()
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `⚠️ **Error executing agent workflow:** ${err.detail || 'Unknown error'}` 
-        }])
+        let errorContent
+        if (res.status === 429 && err.detail?.type === 'rate_limit') {
+          const secs = err.detail.retry_after_seconds || 30
+          const mins = Math.ceil(secs / 60)
+          errorContent = (
+            `⏳ **Rate limit reached (free API tier)**\n\n` +
+            `The Google Gemini API has a quota of 20 requests/day on the free tier. ` +
+            `You've reached today's limit.\n\n` +
+            `**Please try again in ~${secs < 60 ? `${secs} seconds` : `${mins} minute${mins > 1 ? 's' : ''}`}.** ` +
+            `You can also check your current usage at [ai.dev/rate-limit](https://ai.dev/rate-limit).`
+          )
+        } else {
+          errorContent = `⚠️ **Error executing agent workflow:** ${err.detail?.message || err.detail || 'Unknown error'}`
+        }
+        setMessages(prev => [...prev, { role: 'assistant', content: errorContent }])
       }
     } catch (e) {
       setMessages(prev => [...prev, { 

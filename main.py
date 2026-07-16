@@ -51,7 +51,21 @@ async def chat_endpoint(request: ChatRequest):
         results = run_asic_copilot(request.message)
         return results
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Agent Execution Failed: {str(e)}")
+        err_str = str(e)
+        # Detect Google API rate limit (429 RESOURCE_EXHAUSTED)
+        if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str:
+            import re
+            retry_match = re.search(r'retry(?:Delay)?[":\s]+\'?(\d+)', err_str, re.IGNORECASE)
+            retry_secs = int(retry_match.group(1)) if retry_match else 30
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "type": "rate_limit",
+                    "message": "API quota exceeded for the free tier.",
+                    "retry_after_seconds": retry_secs
+                }
+            )
+        raise HTTPException(status_code=500, detail=f"Agent Execution Failed: {err_str}")
 
 @app.get("/api/data/spec")
 async def get_spec_endpoint():
