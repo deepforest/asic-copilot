@@ -185,4 +185,4 @@ if __name__ == "__main__":
         # Check if running in a container, bind to 0.0.0.0 for deployment
         port = int(os.getenv("PORT", 8000))
         print(f"Starting ASIC Copilot FastAPI server on port {port}...")
-        uvicorn.run("main.py:app", host="0.0.0.0", port=port, reload=True)
+        uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
