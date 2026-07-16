@@ -163,10 +163,6 @@ function App() {
           <Cpu size={24} className="text-green" />
           <h1><span className="logo-accent">ASIC Copilot</span></h1>
         </div>
-        <div className="status-badge">
-          <div className="status-dot"></div>
-          <span>Silicon Rev B0 Active</span>
-        </div>
       </header>
 
       {/* Main Workspace with Sidebar and content area */}
