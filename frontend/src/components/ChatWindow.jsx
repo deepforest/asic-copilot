@@ -270,10 +270,12 @@ function ChatWindow({ messages, isLoading, onSend, onSelectChip }) {
           display: flex;
           flex-direction: column;
           height: 100%;
+          min-height: 0; /* critical: allows flex children to shrink below content size */
           overflow: hidden;
         }
         .messages-container {
           flex: 1;
+          min-height: 0; /* allows scroll container to shrink properly */
           overflow-y: auto;
           padding: 20px;
           display: flex;
@@ -347,6 +349,7 @@ function ChatWindow({ messages, isLoading, onSend, onSelectChip }) {
         }
         .input-tray {
           display: flex;
+          flex-shrink: 0; /* never shrink — always pinned to bottom */
           padding: 16px;
           border-top: 1px solid var(--border-color);
           background-color: var(--bg-secondary);
